@@ -1,12 +1,12 @@
 "use client";
-import { AuthProvider } from "./contexts/AuthContext";
-import SlotsSignIn from "./pages/login";
+import { AuthProvider } from "../contexts/AuthContext";
+import SignUpForm from "../pages/signup";
 
-export default function Home() {
+export default function SignUpPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <AuthProvider>
-        <SlotsSignIn />
+        <SignUpForm />
       </AuthProvider>
     </main>
   );

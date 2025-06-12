@@ -1,33 +1,38 @@
 "use client";
 
-import * as React from "react";
-import {
-  Button,
-  FormControl,
-  FormControlLabel,
-  Checkbox,
-  InputLabel,
-  OutlinedInput,
-  TextField,
-  InputAdornment,
-  Link,
-  IconButton,
-} from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import {
+  Alert,
+  Button,
+  Checkbox,
+  CircularProgress,
+  FormControl,
+  FormControlLabel,
+  IconButton,
+  InputAdornment,
+  InputLabel,
+  Link,
+  OutlinedInput,
+  TextField,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { AuthResponse } from "@toolpad/core";
 import { AppProvider } from "@toolpad/core/AppProvider";
 import { SignInPage } from "@toolpad/core/SignInPage";
-import { useTheme } from "@mui/material/styles";
+import { useRouter } from "next/navigation";
+import * as React from "react";
+import { useAuth } from "../contexts/AuthContext";
 
-const providers = [{ id: "credentials", name: "Email and Password" }];
+const providers = [{ id: "credentials", name: "Username and Password" }];
 
-function CustomEmailField() {
+function CustomUsernameField() {
   return (
     <TextField
       id="input-with-icon-textfield"
-      label="Email"
-      name="email"
-      type="email"
+      label="Username"
+      name="username"
+      type="username"
       size="small"
       required
       fullWidth
@@ -79,6 +84,8 @@ function CustomPasswordField() {
 }
 
 function CustomButton() {
+  const { isLoading } = useAuth();
+
   return (
     <Button
       type="submit"
@@ -87,9 +94,10 @@ function CustomButton() {
       size="small"
       disableElevation
       fullWidth
+      disabled={isLoading}
       sx={{ my: 2 }}
     >
-      Log In
+      {isLoading ? <CircularProgress size={20} /> : "Log In"}
     </Button>
   );
 }
@@ -104,7 +112,7 @@ function SignUpLink() {
         width: "100%",
       }}
     >
-      <Link href="/" variant="body2">
+      <Link href="/signup" variant="body2">
         Sign up
       </Link>
       <Link href="/" variant="body2">
@@ -142,17 +150,54 @@ function RememberMe() {
 
 export default function SlotsSignIn() {
   const theme = useTheme();
+  const { login, error, isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  // Redirect if already authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/dashboard"); // Create this route for authenticated users
+    }
+  }, [isAuthenticated, router]);
+
+  const handleSignIn = async (
+    provider: any,
+    formData: FormData
+  ): Promise<AuthResponse> => {
+    const username = formData.get("username") as string;
+    const password = formData.get("password") as string;
+
+    if (!username || !password) {
+      return {
+        error: "Username and password are required",
+        type: "CredentialsSignin",
+      };
+    }
+
+    const success = await login(username, password);
+    if (success) {
+      router.push("/dashboard");
+      return { type: "success" };
+    } else {
+      return {
+        error: "Invalid credentials",
+        type: "CredentialsSignin",
+      };
+    }
+  };
+
   return (
     <AppProvider theme={theme}>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
       <SignInPage
-        signIn={(provider, formData) =>
-          alert(
-            `Logging in with "${provider.name}" and credentials: ${formData.get("email")}, ${formData.get("password")}, and checkbox value: ${formData.get("tandc")}`
-          )
-        }
+        signIn={handleSignIn}
         slots={{
           title: Title,
-          emailField: CustomEmailField,
+          emailField: CustomUsernameField,
           passwordField: CustomPasswordField,
           submitButton: CustomButton,
           signUpLink: SignUpLink,
