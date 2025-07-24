@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import { invoke } from "@tauri-apps/api/core";
 import React, { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 type Club = {
   id: number;
@@ -30,6 +30,7 @@ const ClubsListPage: React.FC = () => {
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [renameClubId, setRenameClubId] = useState<string | null>(null);
   const [renameClubName, setRenameClubName] = useState("");
+  const navigate = useNavigate();
 
   const fetchClubs = () => {
     setLoading(true);
@@ -116,8 +117,7 @@ const ClubsListPage: React.FC = () => {
                 }
               >
                 <Button
-                  variant="text"
-                  // onClick={() => Navigate(`/clubs/${club.id}/members`)}
+                  onClick={() => navigate(`/clubs/${club.id}/members`)}
                   sx={{
                     textTransform: "none",
                     fontWeight: "normal",

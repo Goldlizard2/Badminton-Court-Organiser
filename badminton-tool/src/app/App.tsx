@@ -7,7 +7,10 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/" element={<ClubsListPage />} />
-        {/* Add more routes here as needed */}
+        <Route
+          path="/clubs/:clubId/members"
+          element={<div>Members Page</div>}
+        />
       </Routes>
     </Router>
   );
