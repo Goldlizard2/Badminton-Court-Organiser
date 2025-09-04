@@ -31,6 +31,11 @@ async fn main() {
             commands::clubs::get_clubs,
             commands::clubs::create_club,
             commands::clubs::delete_club,
+            commands::clubs::get_club_by_id,
+            commands::player::get_players_by_club,
+            commands::player::create_player,
+            commands::player::update_player,
+            commands::player::delete_player,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -31,6 +31,24 @@ pub async fn get_clubs(state: State<'_, AppState>) -> Result<Vec<Club>, String> 
 }
 
 #[tauri::command]
+pub async fn get_club_by_id(club_id: i64, state: State<'_, AppState>) -> Result<Club, String> {
+    let row = sqlx::query("SELECT id, name FROM clubs WHERE id = ?")
+        .bind(club_id)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    match row {
+        Some(row) => Ok(Club {
+            id: row.get("id"),
+            name: row.get("name"),
+            member_count: 0,
+        }),
+        None => Err("Club not found".into()),
+    }
+}
+
+#[tauri::command]
 pub async fn create_club(
     request: CreateClubRequest,
     state: State<'_, AppState>,
