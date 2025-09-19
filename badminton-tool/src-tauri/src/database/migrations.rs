@@ -61,4 +61,5 @@ pub async fn run_migrations(db: &SqlitePool) -> Result<(), sqlx::Error> {
     .await?;
 
     Ok(())
+    
 }

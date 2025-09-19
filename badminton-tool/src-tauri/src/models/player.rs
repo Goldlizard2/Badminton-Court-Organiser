@@ -34,7 +34,7 @@ pub struct CreatePlayerRequest {
     pub email: String,
     pub gender: Gender,
     pub club_id: i64,
-    pub skill_level: i8,
+    pub skill_level: i32,
 }
 
 impl CreatePlayerRequest {

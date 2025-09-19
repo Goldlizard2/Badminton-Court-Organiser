@@ -36,6 +36,7 @@ async fn main() {
             commands::player::create_player,
             commands::player::update_player,
             commands::player::delete_player,
+            commands::games_maker::make_games,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -291,7 +291,7 @@ const Members: React.FC = () => {
           variant="contained"
           endIcon={<ArrowForwardIcon />}
           onClick={() =>
-            navigate(`/clubs/club/${clubId}/lobby`, {
+            navigate(`/clubs/${clubId}/lobby`, {
               state: { selectedPlayerIds },
             })
           }
