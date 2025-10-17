@@ -14,7 +14,8 @@ pub struct Player {
     pub email: String,
     pub gender: Gender,
     pub club_id: i64,
-    pub skill_level: i8,
+    pub skill_level: i32,
+    pub sit_off_count: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -23,8 +24,9 @@ pub struct GetPlayer {
     pub first_name: String,
     pub last_name: String,
     pub club_id: i64,
-    pub skill_level: i8,
+    pub skill_level: i32,
     pub gender: Gender,
+    pub sit_off_count: i32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -42,19 +44,19 @@ impl CreatePlayerRequest {
         if self.skill_level < 1 || self.skill_level > 50 {
             return Err("Skill level must be between 1 and 50".to_string());
         }
-        
+
         if self.first_name.trim().is_empty() {
             return Err("First name cannot be empty".to_string());
         }
-        
+
         if self.last_name.trim().is_empty() {
             return Err("Last name cannot be empty".to_string());
         }
-        
+
         if self.email.trim().is_empty() {
             return Err("Email cannot be empty".to_string());
         }
-        
+
         Ok(())
     }
 }

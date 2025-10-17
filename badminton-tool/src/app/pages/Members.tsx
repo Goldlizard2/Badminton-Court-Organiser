@@ -73,7 +73,6 @@ const Members: React.FC = () => {
     if (!selectedClubId) return;
 
     try {
-      // You'll need to add this command to get club by ID
       const club = await invoke<{ id: number; name: string }>(
         "get_club_by_id",
         {
@@ -292,7 +291,11 @@ const Members: React.FC = () => {
           endIcon={<ArrowForwardIcon />}
           onClick={() =>
             navigate(`/clubs/${clubId}/lobby`, {
-              state: { selectedPlayerIds },
+              state: {
+                selectedPlayers: players.filter((p) =>
+                  selectedPlayerIds.includes(p.id)
+                ),
+              },
             })
           }
           sx={{ justifyContent: "flex-end" }}

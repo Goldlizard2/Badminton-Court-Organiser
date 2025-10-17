@@ -1,4 +1,5 @@
-use serde::{Serialize, Deserialize};
+use crate::models::Player;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct Game {

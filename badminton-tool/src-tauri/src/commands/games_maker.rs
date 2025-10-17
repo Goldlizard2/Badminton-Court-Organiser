@@ -1,4 +1,4 @@
-use crate::models::{AppState, Player, Game, GamesRound};
+use crate::models::{Player, AppState, Game, GamesRound};
 use sqlx::Row;
 use tauri::State;
 use std::collections::HashMap;
@@ -7,39 +7,39 @@ use std::collections::HashMap;
 pub async fn make_games(
     mut players: Vec<Player>,
     num_courts: usize,
-    previous_sit_out: Option<Vec<usize>>,
+    previous_sit_out: Option<HashMap<i64, i32>>,
 ) -> GamesRound {
-    // Update sit out counts for players who sat out last round
-    if let Some(sit_out_ids) = previous_sit_out {
-        for p in &mut players {
-            if sit_out_ids.contains(&p.id) {
-                p.sit_off_count += 1;
-            }
-        }
+    println!("make_games called with {} players and {} courts", players.len(), num_courts);
+    let mut sit_out_counts = previous_sit_out.unwrap_or_default();
+
+    // Update each player's sit_off_count from previous rounds
+    for player in &mut players {
+        player.sit_off_count = *sit_out_counts.get(&player.id).unwrap_or(&0);
     }
 
-    // Sort by sit_off_count (ascending), then skill level (for balance)
+    // Sort players by sit_off_count (ascending), then skill_level (descending for balance)
     players.sort_by(|a, b| {
         a.sit_off_count
             .cmp(&b.sit_off_count)
-            .then(a.skill_level.cmp(&b.skill_level))
+            .then(b.skill_level.cmp(&a.skill_level))
     });
-
+    let min_courts = 1;
     let total_needed = num_courts * 4;
     let mut games = Vec::new();
     let mut sitting_out = Vec::new();
 
+    // If not enough players for all courts, sit out the lowest-priority players
     if players.len() < total_needed {
-        // Not enough players for all courts
         sitting_out = players;
         return GamesRound { games, sitting_out };
     }
 
-    // Take players who will play (prioritizing those with fewer sit-outs)
-    let playing_players = players.into_iter().take(total_needed).collect::<Vec<_>>();
-    sitting_out = players.into_iter().skip(total_needed).collect();
+    // Split players into playing and sitting out
+    let (playing_players, sitting_out_players) = players.split_at(total_needed);
+    let playing_players = playing_players.to_vec();
+    sitting_out = sitting_out_players.to_vec();
 
-    // Use stable marriage algorithm to create balanced teams
+    // Create balanced teams
     let teams = create_balanced_teams(playing_players, num_courts);
 
     // Convert teams to games

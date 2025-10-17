@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Tauri Backend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/badminton-tool/src-tauri/target/debug/app",
+      "args": [],
+      "cwd": "${workspaceFolder}/badminton-tool/src-tauri",
+      "stopOnEntry": false
+    }
+  ]
+}
