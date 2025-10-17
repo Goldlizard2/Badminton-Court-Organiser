@@ -22,11 +22,17 @@ interface Player {
   last_name: string;
   skill_level: number;
   club_id: number;
+  sit_off_count: number;
 }
 
 interface Game {
   court: number;
   players: Player[];
+}
+
+interface GamesRound {
+  games: Game[];
+  sitting_off: Player[];
 }
 
 interface LobbyProps {
@@ -43,8 +49,12 @@ const Lobby: React.FC<LobbyProps> = ({
     location.state?.selectedPlayers || initialPlayers || [];
   const [players] = useState<Player[]>(playersList);
   const [maxCourts, setMaxCourts] = useState<number>(initialAvailableCourts);
-  const [games, setGames] = useState<Game[]>([]);
+  const [games, setGames] = useState<GamesRound>({
+    games: [],
+    sitting_off: [],
+  });
   const [loading, setLoading] = useState(false);
+  const [sittingOffPlayers, setSittingOffPlayers] = useState<Player[]>([]);
 
   const numCourts = Math.min(
     maxCourts,
@@ -53,23 +63,29 @@ const Lobby: React.FC<LobbyProps> = ({
 
   const handleCreateGames = async () => {
     setLoading(true);
-    console.log(
-      "Creating games for players:",
-      players,
-      "with courts:",
-      numCourts
-    );
     try {
-      const result = await invoke<{ games: Game[] }>("make_games", {
-        players,
-        numCourts,
+      const result = await invoke<GamesRound>("make_games", {
+        players: players.map((p) => ({
+          id: p.id,
+          first_name: p.first_name,
+          last_name: p.last_name,
+          skill_level: p.skill_level,
+          sit_off_count: p.sit_off_count,
+        })),
+        numCourts: numCourts,
+        previous_sit_offs: null,
       });
+
       console.log("make_games output:", result);
-      setGames(result.games);
+      setGames(result);
+      if (result.sitting_off) {
+        setSittingOffPlayers(result.sitting_off);
+      }
     } catch (e) {
-      // handle error
+      console.error("Error creating games:", e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleCourtChange = (delta: number) => {
@@ -132,21 +148,19 @@ const Lobby: React.FC<LobbyProps> = ({
             Courts to use this round: <b>{numCourts}</b>
           </Typography>
           <Grid container spacing={2}>
-            {[...Array(numCourts)].map((_, idx) => (
+            {games.games.map((game, idx) => (
               <Grid item xs={6} sm={3} key={idx}>
                 <Paper sx={{ p: 2, textAlign: "center" }}>
-                  <Typography variant="subtitle1">Court {idx + 1}</Typography>
-                  {games.length > 0 && games[idx] ? (
-                    <Stack spacing={1}>
-                      {games[idx].players.map((p) => (
-                        <Typography key={p.id}>
-                          {p.first_name} {p.last_name}
-                        </Typography>
-                      ))}
-                    </Stack>
-                  ) : (
-                    <Typography color="text.secondary">No game yet</Typography>
-                  )}
+                  <Typography variant="subtitle1">
+                    Court {game.court}
+                  </Typography>
+                  <Stack spacing={1}>
+                    {game.players.map((player) => (
+                      <Typography key={player.id}>
+                        {player.first_name} {player.last_name}
+                      </Typography>
+                    ))}
+                  </Stack>
                 </Paper>
               </Grid>
             ))}
@@ -162,6 +176,20 @@ const Lobby: React.FC<LobbyProps> = ({
           </Box>
         </Paper>
       </Grid>
+
+      {/* Sitting Off */}
+      {sittingOffPlayers.length > 0 && (
+        <Box mt={2}>
+          <Typography variant="h6">Sitting Off</Typography>
+          <Stack spacing={1}>
+            {sittingOffPlayers.map((player) => (
+              <Typography key={player.id}>
+                {player.first_name} {player.last_name}
+              </Typography>
+            ))}
+          </Stack>
+        </Box>
+      )}
     </Grid>
   );
 };

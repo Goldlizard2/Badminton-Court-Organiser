@@ -8,7 +8,6 @@ mod utils;
 
 use database::{establish_connection, run_migrations};
 use models::AppState;
-use tokio::sync::Mutex;
 
 #[tokio::main]
 async fn main() {
@@ -21,9 +20,7 @@ async fn main() {
     run_migrations(&db).await.expect("Failed to run migrations");
 
     // Create app state
-    let app_state = AppState {
-        db,
-    };
+    let app_state = AppState { db };
 
     tauri::Builder::default()
         .manage(app_state)
