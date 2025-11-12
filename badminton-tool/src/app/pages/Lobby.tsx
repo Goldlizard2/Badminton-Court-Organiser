@@ -1,17 +1,10 @@
 import React, { useState } from "react";
-import {
-  Box,
-  Button,
-  Grid,
-  Paper,
-  Stack,
-  Typography,
-  IconButton,
-  TextField,
-} from "@mui/material";
-import { Add, Remove } from "@mui/icons-material";
+import { Grid } from "@mui/material";
 import { invoke } from "@tauri-apps/api/core";
-import { useLocation } from "react-router-dom";
+import { usePlayersContext } from "../context/PlayersContext";
+import SelectedPlayersPanel from "../components/SelectedPlayersPanel";
+import CourtsPanel from "../components/CourtsPanel";
+import SittingOffPanel from "../components/SittingOffPanel";
 
 const MAX_COURTS = 12;
 const MIN_COURTS = 1;
@@ -36,18 +29,13 @@ interface GamesRound {
 }
 
 interface LobbyProps {
-  initialPlayers?: Player[];
   initialAvailableCourts?: number;
 }
 
 const Lobby: React.FC<LobbyProps> = ({
-  initialPlayers = [],
   initialAvailableCourts = 4,
 }) => {
-  const location = useLocation();
-  const playersList: Player[] =
-    location.state?.selectedPlayers || initialPlayers || [];
-  const [players] = useState<Player[]>(playersList);
+  const { selectedPlayers } = usePlayersContext();
   const [maxCourts, setMaxCourts] = useState<number>(initialAvailableCourts);
   const [games, setGames] = useState<GamesRound>({
     games: [],
@@ -58,14 +46,14 @@ const Lobby: React.FC<LobbyProps> = ({
 
   const numCourts = Math.min(
     maxCourts,
-    Math.floor(players.length / 4) || (players.length >= 4 ? 1 : 0)
+    Math.floor(selectedPlayers.length / 4) || (selectedPlayers.length >= 4 ? 1 : 0)
   );
 
   const handleCreateGames = async () => {
     setLoading(true);
     try {
       const result = await invoke<GamesRound>("make_games", {
-        players: players.map((p) => ({
+        players: selectedPlayers.map((p) => ({
           id: p.id,
           first_name: p.first_name,
           last_name: p.last_name,
@@ -101,95 +89,24 @@ const Lobby: React.FC<LobbyProps> = ({
     <Grid container spacing={2}>
       {/* Left: Selected Members */}
       <Grid item xs={12} md={4}>
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6">Selected Members</Typography>
-          <Stack spacing={1}>
-            {players.map((player) => (
-              <Box key={player.id} display="flex" alignItems="center">
-                <Typography>
-                  {player.first_name} {player.last_name}
-                </Typography>
-              </Box>
-            ))}
-          </Stack>
-        </Paper>
+        <SelectedPlayersPanel />
       </Grid>
 
       {/* Right: Courts Grid */}
       <Grid item xs={12} md={8}>
-        <Paper sx={{ p: 2 }}>
-          <Box display="flex" alignItems="center" mb={2}>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Courts
-            </Typography>
-            <IconButton
-              onClick={() => handleCourtChange(-1)}
-              disabled={maxCourts <= 1}
-            >
-              <Remove />
-            </IconButton>
-            <TextField
-              value={maxCourts}
-              size="small"
-              sx={{ width: 50, mx: 1 }}
-              inputProps={{ readOnly: true, style: { textAlign: "center" } }}
-            />
-            <IconButton
-              onClick={() => handleCourtChange(1)}
-              disabled={maxCourts >= 12}
-            >
-              <Add />
-            </IconButton>
-            <Typography sx={{ ml: 2 }} color="text.secondary">
-              (Max courts)
-            </Typography>
-          </Box>
-          <Typography variant="body2" sx={{ mb: 1 }}>
-            Courts to use this round: <b>{numCourts}</b>
-          </Typography>
-          <Grid container spacing={2}>
-            {games.games.map((game, idx) => (
-              <Grid item xs={6} sm={3} key={idx}>
-                <Paper sx={{ p: 2, textAlign: "center" }}>
-                  <Typography variant="subtitle1">
-                    Court {game.court}
-                  </Typography>
-                  <Stack spacing={1}>
-                    {game.players.map((player) => (
-                      <Typography key={player.id}>
-                        {player.first_name} {player.last_name}
-                      </Typography>
-                    ))}
-                  </Stack>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
-          <Box mt={2}>
-            <Button
-              variant="contained"
-              onClick={handleCreateGames}
-              disabled={loading || players.length < 4}
-            >
-              {loading ? "Creating..." : "Create Games"}
-            </Button>
-          </Box>
-        </Paper>
+        <CourtsPanel
+          maxCourts={maxCourts}
+          onCourtChange={handleCourtChange}
+          numCourts={numCourts}
+          games={games.games}
+          onCreateGames={handleCreateGames}
+          loading={loading}
+          selectedPlayersCount={selectedPlayers.length}
+        />
       </Grid>
 
       {/* Sitting Off */}
-      {sittingOffPlayers.length > 0 && (
-        <Box mt={2}>
-          <Typography variant="h6">Sitting Off</Typography>
-          <Stack spacing={1}>
-            {sittingOffPlayers.map((player) => (
-              <Typography key={player.id}>
-                {player.first_name} {player.last_name}
-              </Typography>
-            ))}
-          </Stack>
-        </Box>
-      )}
+      <SittingOffPanel players={sittingOffPlayers} />
     </Grid>
   );
 };

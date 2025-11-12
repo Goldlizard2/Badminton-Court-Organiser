@@ -1,54 +1,33 @@
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import {
-  Alert,
-  Box,
-  Button,
-  List,
-  ListItem,
-  Paper,
-  Skeleton,
-  Typography,
-} from "@mui/material";
-import { invoke } from "@tauri-apps/api/core";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { invoke } from "@tauri-apps/api/core";
+import { Alert, Box } from "@mui/material";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import MembersList from "../components/MembersList";
 import CreatePlayerDialog from "../components/CreatePlayerDialog";
-import PlayerListItem from "../components/PlayerListItem";
+import { usePlayersContext, Player } from "../context/PlayersContext";
 
-interface Player {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  skill_level: number;
-  gender: "Male" | "Female";
-  club_id: number;
-  sit_off_count: number;
-}
-
-interface CreatePlayerRequest {
-  first_name: string;
-  last_name: string;
-  email: string;
-  gender: "Male" | "Female";
-  club_id: number;
-  skill_level: number;
-}
 
 const Members: React.FC = () => {
   const { clubId } = useParams<{ clubId: string }>();
   const navigate = useNavigate();
+  const {
+    players,
+    selectedPlayers,
+    setPlayers,
+    selectPlayer,
+    deselectPlayer,
+    clearSelectedPlayers,
+  } = usePlayersContext();
+
   const [clubName, setClubName] = useState<string>("");
-  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPlayerIds, setSelectedPlayerIds] = useState<number[]>([]);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [newPlayer, setNewPlayer] = useState<
-    Omit<CreatePlayerRequest, "club_id">
-  >({
+  const [newPlayer, setNewPlayer] = useState<Omit<CreatePlayerRequest, "club_id">>({
     first_name: "",
     last_name: "",
     email: "",
@@ -57,12 +36,7 @@ const Members: React.FC = () => {
   });
 
   const selectedClubId = clubId ? parseInt(clubId, 10) : null;
-  const handleSelectPlayer = (id: number) => {
-    setSelectedPlayerIds((prev) =>
-      prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
-    );
-  };
-  // Load club name and players when component mounts
+
   useEffect(() => {
     if (selectedClubId) {
       loadClubData();
@@ -74,12 +48,9 @@ const Members: React.FC = () => {
     if (!selectedClubId) return;
 
     try {
-      const club = await invoke<{ id: number; name: string }>(
-        "get_club_by_id",
-        {
-          clubId: selectedClubId,
-        }
-      );
+      const club = await invoke<{ id: number; name: string }>("get_club_by_id", {
+        clubId: selectedClubId,
+      });
       setClubName(club.name);
     } catch (err) {
       console.error("Error loading club:", err);
@@ -104,6 +75,14 @@ const Members: React.FC = () => {
     }
   };
 
+  const handleSelectPlayer = (id: number) => {
+    const player = players.find((p) => p.id === id);
+    if (!player) return;
+
+    const isSelected = selectedPlayers.some((p) => p.id === id);
+    isSelected ? deselectPlayer(id) : selectPlayer(player);
+  };
+
   const handleCreatePlayer = async () => {
     if (
       !selectedClubId ||
@@ -122,7 +101,6 @@ const Members: React.FC = () => {
 
       await invoke("create_player", { request: playerRequest });
 
-      // Reset form
       setNewPlayer({
         first_name: "",
         last_name: "",
@@ -131,8 +109,6 @@ const Members: React.FC = () => {
         skill_level: 1,
       });
       setCreateDialogOpen(false);
-
-      // Reload players list
       await loadPlayers();
     } catch (err) {
       setError(err as string);
@@ -146,22 +122,14 @@ const Members: React.FC = () => {
     setError(null);
     try {
       await invoke("delete_player", { playerId });
-      await loadPlayers(); // Reload the list
+      deselectPlayer(playerId);
+      await loadPlayers();
     } catch (err) {
       setError(err as string);
       console.error("Error deleting player:", err);
     }
   };
 
-  const getGenderChipColor = (gender: string) => {
-    return gender === "Female" ? "secondary" : "primary";
-  };
-
-  const getPlayerBackgroundColor = (gender: string) => {
-    return gender === "Female" ? "#fce4ec" : "#e3f2fd"; // Light pink or light blue
-  };
-
-  // Add this handler for CreatePlayerDialog
   const handleDialogChange = (field: string, value: any) => {
     setNewPlayer((prev) => ({
       ...prev,
@@ -169,15 +137,23 @@ const Members: React.FC = () => {
     }));
   };
 
+  const getSubtitle = () => {
+    const memberText = `${players.length} member${players.length !== 1 ? "s" : ""}`;
+    const playingText =
+      selectedPlayers.length > 0 ? `, ${selectedPlayers.length} playing today` : "";
+    return memberText + playingText;
+  };
+
+  const getGenderChipColor = (gender: string) =>
+    gender === "Female" ? "secondary" : "primary";
+
+  const getPlayerBackgroundColor = (gender: string) =>
+    gender === "Female" ? "#fce4ec" : "#e3f2fd";
+
   if (!selectedClubId) {
     return (
       <Box sx={{ p: 3 }}>
-        <Typography variant="h5" gutterBottom>
-          Club Members
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Invalid club ID
-        </Typography>
+        <Header title="Club Members" subtitle="Invalid club ID" />
       </Box>
     );
   }
@@ -189,39 +165,21 @@ const Members: React.FC = () => {
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-        alignItems: "flex-start", // align to left
-        p: 3, // padding
+        alignItems: "flex-start",
+        p: 3,
         boxSizing: "border-box",
         overflow: "auto",
       }}
     >
-      {/* Header Section - Title on left, Button on right */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="flex-center"
-        mb={3}
-        sx={{ width: "100%" }}
-      >
-        <Box sx={{ textAlign: "left" }}>
-          <Typography variant="h5" gutterBottom sx={{ mb: 0.5 }}>
-            Members of {clubName}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {players.length} member{players.length !== 1 ? "s" : ""}
-            {selectedPlayerIds.length > 0 &&
-              `, ${selectedPlayerIds.length} playing today`}{" "}
-            {/* Show loading state */}
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<PersonAddIcon />}
-          onClick={() => setCreateDialogOpen(true)}
-        >
-          Add Member
-        </Button>
-      </Box>
+      <Header
+        title={`Members of ${clubName}`}
+        subtitle={getSubtitle()}
+        actionButton={{
+          label: "Add Member",
+          icon: <PersonAddIcon />,
+          onClick: () => setCreateDialogOpen(true),
+        }}
+      />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -229,40 +187,16 @@ const Members: React.FC = () => {
         </Alert>
       )}
 
-      {/* Members Table */}
-      <Paper sx={{ width: "100%", overflow: "auto" }}>
-        {loading ? (
-          <List>
-            {[...Array(5)].map((_, i) => (
-              <ListItem key={i}>
-                <Skeleton variant="rectangular" width="100%" height={80} />
-              </ListItem>
-            ))}
-          </List>
-        ) : players.length === 0 ? (
-          <Box sx={{ p: 4, textAlign: "center" }}>
-            <Typography variant="body1" color="text.secondary">
-              No members found in this club
-            </Typography>
-          </Box>
-        ) : (
-          <List sx={{ width: "100%" }}>
-            {players.map((player) => (
-              <PlayerListItem
-                key={player.id}
-                player={player}
-                isSelected={selectedPlayerIds.includes(player.id)}
-                onSelect={handleSelectPlayer}
-                onDelete={handleDeletePlayer}
-                getGenderChipColor={getGenderChipColor}
-                getPlayerBackgroundColor={getPlayerBackgroundColor}
-              />
-            ))}
-          </List>
-        )}
-      </Paper>
+      <MembersList
+        players={players}
+        selectedPlayers={selectedPlayers}
+        loading={loading}
+        onSelectPlayer={handleSelectPlayer}
+        onDeletePlayer={handleDeletePlayer}
+        getGenderChipColor={getGenderChipColor}
+        getPlayerBackgroundColor={getPlayerBackgroundColor}
+      />
 
-      {/* Create Player Dialog */}
       <CreatePlayerDialog
         open={createDialogOpen}
         newPlayer={newPlayer}
@@ -271,39 +205,14 @@ const Members: React.FC = () => {
         onSubmit={handleCreatePlayer}
       />
 
-      {/* Footer navigation */}
-      <Box
-        sx={{
-          width: "100%",
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <Button
-          variant="contained"
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate("/")}
-          sx={{ justifyContent: "flex-start" }}
-        >
-          Clubs
-        </Button>
-        <Button
-          variant="contained"
-          endIcon={<ArrowForwardIcon />}
-          onClick={() =>
-            navigate(`/clubs/${clubId}/lobby`, {
-              state: {
-                selectedPlayers: players.filter((p) =>
-                  selectedPlayerIds.includes(p.id)
-                ),
-              },
-            })
-          }
-          sx={{ justifyContent: "flex-end" }}
-        >
-          Lobby
-        </Button>
-      </Box>
+      <Footer
+        onBack={() => navigate("/")}
+        onForward={() => navigate(`/clubs/${clubId}/lobby`)}
+        backLabel="Clubs"
+        forwardLabel={`Lobby (${selectedPlayers.length})`}
+        forwardDisabled={selectedPlayers.length === 0}
+        sx={{ mt: 2 }}
+      />
     </Box>
   );
 };
