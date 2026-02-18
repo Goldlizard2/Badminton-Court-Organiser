@@ -91,17 +91,23 @@ const Lobby: React.FC<LobbyProps> = ({ initialAvailableCourts = 4 }) => {
           first_name: p.first_name,
           last_name: p.last_name,
           skill_level: p.skill_level,
-          sit_out_count: p.sit_out_count,
+          sit_out_count: p.sit_out_count ?? 0,
         })),
         numCourts: numCourts,
-        previous_sit_outs: sittingOutPlayers.length > 0 ? sittingOutPlayers.map((p) => p.id) : null,
+        previous_sit_out:
+          sittingOutPlayers.length > 0
+            ? sittingOutPlayers.map((p) => ({
+                id: p.id,
+                first_name: p.first_name,
+                last_name: p.last_name,
+                skill_level: p.skill_level,
+                sit_out_count: p.sit_out_count ?? 0,
+              }))
+            : null,
       });
 
-      console.log("make_games output:", result);
-      console.log("sitting_out:", (result as any)?.sitting_out);
-
       setGames(result);
-      setSittingOutPlayers((result as any)?.sitting_out ?? []);
+      setSittingOutPlayers(result.sitting_out ?? []);
     } catch (e) {
       console.error("Error creating games:", e);
     } finally {
