@@ -15,7 +15,7 @@ pub struct Player {
     pub gender: Gender,
     pub club_id: i64,
     pub skill_level: i32,
-    pub sit_off_count: i32,
+    pub sit_out_count: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -26,7 +26,7 @@ pub struct GetPlayer {
     pub club_id: i64,
     pub skill_level: i32,
     pub gender: Gender,
-    pub sit_off_count: i32,
+    pub sit_out_count: i32,
 }
 
 #[derive(Debug, Deserialize)]

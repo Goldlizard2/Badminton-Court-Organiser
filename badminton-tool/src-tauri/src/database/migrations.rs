@@ -36,7 +36,7 @@ pub async fn run_migrations(db: &SqlitePool) -> Result<(), sqlx::Error> {
             club_id INTEGER NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             skill_level INTEGER NOT NULL CHECK (skill_level BETWEEN 1 AND 50),
-            sit_off_count INTEGER DEFAULT 0,
+            sit_out_count INTEGER DEFAULT 0,
             FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE
         )
         "#,
@@ -44,8 +44,8 @@ pub async fn run_migrations(db: &SqlitePool) -> Result<(), sqlx::Error> {
     .execute(db)
     .await?;
 
-    // Reset sit_off_count for all players on app load
-    sqlx::query("UPDATE players SET sit_off_count = 0")
+    // Reset sit_out_count for all players on app load
+    sqlx::query("UPDATE players SET sit_out_count = 0")
         .execute(db)
         .await
         .ok();

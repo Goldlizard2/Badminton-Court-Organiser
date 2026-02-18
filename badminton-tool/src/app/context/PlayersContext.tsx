@@ -7,7 +7,7 @@ interface Player {
   skill_level: number;
   gender?: "Male" | "Female";
   club_id: number;
-  sit_off_count: number;
+  sit_out_count: number;
 }
 
 interface PlayersContextType {

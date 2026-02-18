@@ -5,7 +5,7 @@ use tauri::State;
 #[tauri::command]
 pub async fn get_players_by_club(club_id: i64, state: State<'_, AppState>) -> Result<Vec<GetPlayer>, String> {
     let rows = sqlx::query(
-        "SELECT id, first_name, last_name, gender, club_id, skill_level, sit_off_count FROM players WHERE club_id = ? ORDER BY first_name, last_name"
+        "SELECT id, first_name, last_name, gender, club_id, skill_level, sit_out_count FROM players WHERE club_id = ? ORDER BY first_name, last_name"
     )
     .bind(club_id)
     .fetch_all(&state.db)
@@ -28,7 +28,7 @@ pub async fn get_players_by_club(club_id: i64, state: State<'_, AppState>) -> Re
                 last_name: row.get("last_name"),
                 club_id: row.get("club_id"),
                 skill_level: row.get("skill_level"),
-                sit_off_count: row.get("sit_off_count"),
+                sit_out_count: row.get("sit_out_count"),
                 gender,
                 
             }
@@ -55,7 +55,7 @@ pub async fn create_player(
 
     // Insert the player
     let result = sqlx::query(
-        "INSERT INTO players (first_name, last_name, email, gender, club_id, skill_level, sit_off_count) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id"
+        "INSERT INTO players (first_name, last_name, email, gender, club_id, skill_level, sit_out_count) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id"
     )
     .bind(&request.first_name)
     .bind(&request.last_name)
@@ -88,7 +88,7 @@ pub async fn create_player(
         gender: request.gender,
         club_id: request.club_id,
         skill_level: request.skill_level,
-        sit_off_count: 0,
+        sit_out_count: 0,
     })
 }
 
@@ -162,7 +162,7 @@ pub async fn update_player(
         gender: request.gender,
         club_id: request.club_id,
         skill_level: request.skill_level,
-        sit_off_count: 0,
+        sit_out_count: 0,
     })
 }
 

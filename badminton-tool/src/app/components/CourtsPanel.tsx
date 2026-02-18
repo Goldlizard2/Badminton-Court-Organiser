@@ -9,7 +9,7 @@ interface Player {
   last_name: string;
   skill_level: number;
   club_id: number;
-  sit_off_count: number;
+  sit_out_count: number;
 }
 
 interface Game {

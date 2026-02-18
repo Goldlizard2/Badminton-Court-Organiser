@@ -7,21 +7,21 @@ interface Player {
   last_name: string;
   skill_level: number;
   club_id: number;
-  sit_off_count: number;
+  sit_out_count: number;
 }
 
-interface SittingOffPanelProps {
+interface SittingOutPanelProps {
   players: Player[];
 }
 
-const SittingOffPanel: React.FC<SittingOffPanelProps> = ({ players }) => {
+const SittingOutPanel: React.FC<SittingOutPanelProps> = ({ players }) => {
   if (players.length === 0) {
     return null;
   }
 
   return (
     <Box mt={2}>
-      <Typography variant="h6">Sitting Off</Typography>
+      <Typography variant="h6">Sitting Out</Typography>
       <Stack spacing={1}>
         {players.map((player) => (
           <Typography key={player.id}>
@@ -33,4 +33,4 @@ const SittingOffPanel: React.FC<SittingOffPanelProps> = ({ players }) => {
   );
 };
 
-export default SittingOffPanel;
+export default SittingOutPanel;

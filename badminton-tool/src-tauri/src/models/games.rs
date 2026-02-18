@@ -12,7 +12,7 @@ pub struct InGamePlayer {
     pub first_name: String,
     pub last_name: String,
     pub skill_level: i32,
-    pub sit_off_count: i32,
+    pub sit_out_count: i32,
 }
 
 #[derive(Serialize, Deserialize)]

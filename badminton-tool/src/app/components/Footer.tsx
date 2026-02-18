@@ -26,12 +26,14 @@ const Footer: React.FC<FooterProps> = ({
   backDisabled = false,
   sx = {},
 }) => {
+  const showForward = typeof onForward === "function";
+
   return (
     <Box
       sx={{
         width: "100%",
         display: "flex",
-        justifyContent: "space-between",
+        justifyContent: showForward ? "space-between" : "flex-start",
         ...sx,
       }}
     >
@@ -44,15 +46,18 @@ const Footer: React.FC<FooterProps> = ({
       >
         {backLabel}
       </Button>
-      <Button
-        variant="contained"
-        endIcon={forwardIcon}
-        onClick={onForward}
-        disabled={forwardDisabled}
-        sx={{ justifyContent: "flex-end" }}
-      >
-        {forwardLabel}
-      </Button>
+
+      {showForward && (
+        <Button
+          variant="contained"
+          endIcon={forwardIcon}
+          onClick={onForward}
+          disabled={forwardDisabled}
+          sx={{ justifyContent: "flex-end" }}
+        >
+          {forwardLabel}
+        </Button>
+      )}
     </Box>
   );
 };

@@ -12,7 +12,7 @@ mod tests {
             gender: "Male".to_string(),
             club_id: 1,
             skill_level: skill,
-            sit_off_count: 0,
+            sit_out_count: 0,
         }
     }
 

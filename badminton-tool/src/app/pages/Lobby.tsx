@@ -1,10 +1,17 @@
-import React, { useState } from "react";
-import { Grid } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { Box, Button, Fab, Grid, IconButton, Typography } from "@mui/material";
+import { useNavigate, useParams} from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { usePlayersContext } from "../context/PlayersContext";
 import SelectedPlayersPanel from "../components/SelectedPlayersPanel";
 import CourtsPanel from "../components/CourtsPanel";
-import SittingOffPanel from "../components/SittingOffPanel";
+import SittingOutPanel from "../components/SittingOutPanel";
+import Footer from "../components/Footer";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import PauseIcon from "@mui/icons-material/Pause";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
+import { Home } from "@mui/icons-material";
 
 const MAX_COURTS = 12;
 const MIN_COURTS = 1;
@@ -15,7 +22,7 @@ interface Player {
   last_name: string;
   skill_level: number;
   club_id: number;
-  sit_off_count: number;
+  sit_out_count: number;
 }
 
 interface Game {
@@ -25,24 +32,50 @@ interface Game {
 
 interface GamesRound {
   games: Game[];
-  sitting_off: Player[];
+  sitting_out: Player[];
 }
 
 interface LobbyProps {
   initialAvailableCourts?: number;
 }
 
-const Lobby: React.FC<LobbyProps> = ({
-  initialAvailableCourts = 4,
-}) => {
+const Lobby: React.FC<LobbyProps> = ({ initialAvailableCourts = 4 }) => {
+  const navigate = useNavigate();
+  const { clubId } = useParams<{ clubId: string }>();
   const { selectedPlayers } = usePlayersContext();
+
   const [maxCourts, setMaxCourts] = useState<number>(initialAvailableCourts);
   const [games, setGames] = useState<GamesRound>({
     games: [],
-    sitting_off: [],
+    sitting_out: [],
   });
   const [loading, setLoading] = useState(false);
-  const [sittingOffPlayers, setSittingOffPlayers] = useState<Player[]>([]);
+  const [sittingOutPlayers, setSittingOutPlayers] = useState<Player[]>([]);
+
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(10 * 60);
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const timerId = window.setInterval(() => {
+      setRemainingSeconds((prev) => {
+        if (prev <= 1) {
+          setIsRunning(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [isRunning]);
+
+  const addMinute = () => setRemainingSeconds((prev) => prev + 60);
+  const removeMinute = () => setRemainingSeconds((prev) => Math.max(0, prev - 60));
+
+  const minutes = String(Math.floor(remainingSeconds / 60)).padStart(2, "0");
+  const seconds = String(remainingSeconds % 60).padStart(2, "0");
 
   const numCourts = Math.min(
     maxCourts,
@@ -58,17 +91,17 @@ const Lobby: React.FC<LobbyProps> = ({
           first_name: p.first_name,
           last_name: p.last_name,
           skill_level: p.skill_level,
-          sit_off_count: p.sit_off_count,
+          sit_out_count: p.sit_out_count,
         })),
         numCourts: numCourts,
-        previous_sit_offs: null,
+        previous_sit_outs: sittingOutPlayers.length > 0 ? sittingOutPlayers.map((p) => p.id) : null,
       });
 
       console.log("make_games output:", result);
+      console.log("sitting_out:", (result as any)?.sitting_out);
+
       setGames(result);
-      if (result.sitting_off) {
-        setSittingOffPlayers(result.sitting_off);
-      }
+      setSittingOutPlayers((result as any)?.sitting_out ?? []);
     } catch (e) {
       console.error("Error creating games:", e);
     } finally {
@@ -86,28 +119,87 @@ const Lobby: React.FC<LobbyProps> = ({
   };
 
   return (
-    <Grid container spacing={2}>
-      {/* Left: Selected Members */}
-      <Grid item xs={12} md={4}>
-        <SelectedPlayersPanel />
+    <Box
+      sx={{
+        width: "100%",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        p: 2,
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Top controls */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "1fr auto 1fr",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <Box>
+          <Button
+            variant="outlined"
+            startIcon={<Home />}
+            onClick={() => navigate("/")}
+          >
+          </Button>
+        </Box>
+
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <IconButton aria-label="remove minute" onClick={removeMinute} size="small">
+            <RemoveIcon />
+          </IconButton>
+          <Typography variant="h6" sx={{ minWidth: 90, textAlign: "center" }}>
+            {minutes}:{seconds}
+          </Typography>
+          <IconButton aria-label="add minute" onClick={addMinute} size="small">
+            <AddIcon />
+          </IconButton>
+        </Box>
+
+        <Box />
+      </Box>
+
+      <Grid container spacing={2} sx={{ flex: 1 }}>
+        <Grid item xs={12} md={4}>
+          <SelectedPlayersPanel />
+        </Grid>
+
+        <Grid item xs={12} md={8}>
+          <CourtsPanel
+            maxCourts={maxCourts}
+            onCourtChange={handleCourtChange}
+            numCourts={numCourts}
+            games={games.games}
+            onCreateGames={handleCreateGames}
+            loading={loading}
+            selectedPlayersCount={selectedPlayers.length}
+          />
+        </Grid>
+
+        <SittingOutPanel players={sittingOutPlayers} />
       </Grid>
 
-      {/* Right: Courts Grid */}
-      <Grid item xs={12} md={8}>
-        <CourtsPanel
-          maxCourts={maxCourts}
-          onCourtChange={handleCourtChange}
-          numCourts={numCourts}
-          games={games.games}
-          onCreateGames={handleCreateGames}
-          loading={loading}
-          selectedPlayersCount={selectedPlayers.length}
-        />
-      </Grid>
+      <Footer
+        onBack={() => navigate(`/clubs/${clubId}/members`)}
+        backLabel="Members"
+        forwardDisabled={true}
+        sx={{ mt: 2 }}
+        
+      />
 
-      {/* Sitting Off */}
-      <SittingOffPanel players={sittingOffPlayers} />
-    </Grid>
+      <Fab
+        color="primary"
+        onClick={() => setIsRunning((prev) => !prev)}
+        sx={{ position: "fixed", right: 24, bottom: 24 }}
+        aria-label={isRunning ? "pause timer" : "play timer"}
+        >
+        {isRunning ? <PauseIcon /> : <PlayArrowIcon />}
+        
+      </Fab>
+    </Box>
   );
 };
 
